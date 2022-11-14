@@ -1,7 +1,7 @@
 import kk from "./kk"
 import { repeater } from "./helpers"
 
-const ITERATIONS = 10
+const ITERATIONS = 100
 const repeat = repeater(ITERATIONS)
 
 describe("kk", () => {
