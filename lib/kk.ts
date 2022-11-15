@@ -1,36 +1,53 @@
-import { randomElement } from "./helpers"
-
-const MAX_ITERATIONS = 1000
+import {
+  arrayInsert,
+  arrayInsertionPoints,
+  arrayPrev,
+  arrayRandom,
+  arrayShuffle,
+  arrayCheckoff,
+  arrayRotate,
+} from "./helpers"
 
 const kk = (
   users: string[],
-  exceptions: Map<string, string[]>,
-  iteration = 0
+  exceptions: Map<string, string[]>
 ): Map<string, string> => {
   if (users.length <= 1) throw new Error("Not enough users")
-  if (iteration >= MAX_ITERATIONS) throw new Error("Too many iterations")
 
-  const pool = new Set(users)
-  const pairs = new Map()
-  let valid = true
+  const todoList = arrayShuffle([...users])
+  let results = [todoList.pop() as string]
 
-  users.forEach(user => {
-    const possibles = Array.from(pool)
-      .filter(possible => possible !== user)
-      .filter(possible => !exceptions.get(user)?.includes(possible))
+  const validBefore = (insertingValue: string, index: number) => {
+    const curr = results[index]
+    return !exceptions.get(curr)?.includes(insertingValue)
+  }
 
-    const rando = randomElement(possibles)
-    if (!rando) valid = false
-    pairs.set(user, rando)
-    pool.delete(rando)
+  const validAfter = (insertingValue: string, index: number) => {
+    const prev = arrayPrev(results, index)
+    return !exceptions.get(insertingValue)?.includes(prev)
+  }
+
+  const validResults = arrayCheckoff(todoList, (checkoff, subject) => {
+    const possiblePositions = arrayInsertionPoints(results).filter(
+      pos => validBefore(subject, pos) && validAfter(subject, pos)
+    )
+
+    if (possiblePositions.length > 0) {
+      results = arrayInsert(results, arrayRandom(possiblePositions), subject)
+      checkoff()
+    }
   })
 
-  pairs.forEach((gifter, giftee) => {
-    if (gifter === giftee || (exceptions.get(gifter) || []).includes(giftee))
-      valid = false
+  if (!validResults) throw new Error("Bad results")
+
+  const rotatedArray = arrayRotate(results)
+
+  const resultsMap = new Map()
+  results.forEach((result, index) => {
+    resultsMap.set(result, rotatedArray[index])
   })
 
-  return valid ? pairs : kk(users, exceptions, iteration + 1)
+  return resultsMap
 }
 
 export default kk
